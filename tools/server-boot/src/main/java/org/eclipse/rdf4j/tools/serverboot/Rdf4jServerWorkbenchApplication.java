@@ -25,6 +25,7 @@ import org.apache.catalina.Context;
 import org.eclipse.rdf4j.common.platform.Platform;
 import org.eclipse.rdf4j.common.platform.PlatformFactory;
 import org.eclipse.rdf4j.http.server.compression.HttpCompressionFilter;
+import org.eclipse.rdf4j.observability.otel.Rdf4jServerTracingFilter;
 import org.eclipse.rdf4j.workbench.proxy.CacheFilter;
 import org.eclipse.rdf4j.workbench.proxy.CookieCacheControlFilter;
 import org.eclipse.rdf4j.workbench.proxy.RedirectFilter;
@@ -210,6 +211,17 @@ public class Rdf4jServerWorkbenchApplication {
 		registration.setName("serverRootDummyPage");
 		registration.setOrder(-12);
 		registration.setAsyncSupported(true);
+		return registration;
+	}
+
+	@Bean
+	FilterRegistrationBean<Rdf4jServerTracingFilter> rdf4jServerTracingFilter() {
+		FilterRegistrationBean<Rdf4jServerTracingFilter> registration = new FilterRegistrationBean<>(
+				new Rdf4jServerTracingFilter());
+		registration.addUrlPatterns("/rdf4j-server", "/rdf4j-server/*");
+		registration.setName("Rdf4jServerTracingFilter");
+		// before HttpCompressionFilter (-10) so the tracing span wraps the whole request
+		registration.setOrder(-11);
 		return registration;
 	}
 

@@ -11,6 +11,12 @@
         </filter-class>
     </filter>
      -->
+	<!-- OpenTelemetry SERVER spans for incoming requests; inert unless
+		otel.instrumentation.rdf4j.enabled=true (or OTEL_INSTRUMENTATION_RDF4J_ENABLED=true) is set -->
+	<filter>
+		<filter-name>Rdf4jServerTracingFilter</filter-name>
+		<filter-class>org.eclipse.rdf4j.observability.otel.Rdf4jServerTracingFilter</filter-class>
+	</filter>
 	<filter>
 		<filter-name>HttpCompressionFilter</filter-name>
 		<filter-class>org.eclipse.rdf4j.http.server.compression.HttpCompressionFilter</filter-class>
@@ -41,6 +47,11 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
      -->
+	<!-- must be the first mapping so the tracing span wraps the whole request, including compression -->
+	<filter-mapping>
+		<filter-name>Rdf4jServerTracingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
 	<filter-mapping>
 		<filter-name>HttpCompressionFilter</filter-name>
 		<url-pattern>/*</url-pattern>
