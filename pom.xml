@@ -45,6 +45,7 @@
 		<module>testsuites</module>
 		<module>compliance</module>
 		<module>examples</module>
+		<module>observability</module>
 		<!-- for maven Central deployment it is important that bom is the last module -->
 		<module>bom</module>
 	</modules>
@@ -92,6 +93,7 @@
 		<jetty.version>12.1.10</jetty.version>
 		<netty.version>4.2.15.Final</netty.version>
 		<opentelemetry.version>1.63.0</opentelemetry.version>
+		<opentelemetry-instrumentation.version>2.29.0</opentelemetry-instrumentation.version>
 		<bouncycastle.version>1.84</bouncycastle.version>
 		<testcontainers.version>2.0.5</testcontainers.version>
 		<mockito.javaagent>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</mockito.javaagent>
@@ -548,6 +550,18 @@
 				<version>${opentelemetry.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>io.opentelemetry.instrumentation</groupId>
+				<artifactId>opentelemetry-instrumentation-bom</artifactId>
+				<version>${opentelemetry-instrumentation.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>${project.groupId}</groupId>
+				<artifactId>rdf4j-observability-otel</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.wiremock</groupId>

@@ -337,6 +337,12 @@
 				<version>${project.version}</version>
 				<type>war</type>
 			</dependency>
+			<!-- observability modules -->
+			<dependency>
+				<groupId>org.eclipse.rdf4j</groupId>
+				<artifactId>rdf4j-observability-otel</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 			<!-- umbrella modules -->
 			<dependency>
 				<groupId>org.eclipse.rdf4j</groupId>
