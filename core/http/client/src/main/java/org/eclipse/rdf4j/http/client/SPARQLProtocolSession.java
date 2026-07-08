@@ -38,6 +38,9 @@ import org.eclipse.rdf4j.common.io.ByteSink;
 import org.eclipse.rdf4j.common.io.CharSink;
 import org.eclipse.rdf4j.common.io.Sink;
 import org.eclipse.rdf4j.common.lang.FileFormat;
+import org.eclipse.rdf4j.http.client.observability.HttpRequestListeners;
+import org.eclipse.rdf4j.http.client.observability.RemoteOperation;
+import org.eclipse.rdf4j.http.client.observability.RemoteOperationDecorators;
 import org.eclipse.rdf4j.http.client.shacl.RemoteShaclValidationException;
 import org.eclipse.rdf4j.http.client.spi.AuthenticationHandler;
 import org.eclipse.rdf4j.http.client.spi.BasicAuthenticationHandler;
@@ -356,7 +359,9 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 			throws IOException, RepositoryException,
 			MalformedQueryException, UnauthorizedException, QueryInterruptedException {
 		HttpRequest method = getQueryMethod(ql, query, baseURI, dataset, includeInferred, maxQueryTime, bindings);
-		return getBackgroundTupleQueryResult(method, callerRef);
+		return RemoteOperationDecorators.decorate(
+				new RemoteOperation(RemoteOperation.Kind.TUPLE_QUERY, query, getQueryURL()),
+				() -> getBackgroundTupleQueryResult(method, callerRef));
 	}
 
 	public void sendTupleQuery(QueryLanguage ql, String query, String baseURI, Dataset dataset, boolean includeInferred,
@@ -364,7 +369,12 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 			throws IOException, TupleQueryResultHandlerException, RepositoryException, MalformedQueryException,
 			UnauthorizedException, QueryInterruptedException {
 		HttpRequest method = getQueryMethod(ql, query, baseURI, dataset, includeInferred, maxQueryTime, bindings);
-		getTupleQueryResult(method, handler);
+		RemoteOperationDecorators.decorate(
+				new RemoteOperation(RemoteOperation.Kind.TUPLE_QUERY, query, getQueryURL()),
+				() -> {
+					getTupleQueryResult(method, handler);
+					return null;
+				});
 	}
 
 	public void sendUpdate(QueryLanguage ql, String update, String baseURI, Dataset dataset, boolean includeInferred,
@@ -380,7 +390,12 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 				bindings);
 
 		try {
-			executeNoContent(method);
+			RemoteOperationDecorators.decorate(
+					new RemoteOperation(RemoteOperation.Kind.UPDATE, update, getUpdateURL()),
+					() -> {
+						executeNoContent(method);
+						return null;
+					});
 		} catch (RepositoryException | MalformedQueryException | QueryInterruptedException e) {
 			throw e;
 		} catch (RDF4JException e) {
@@ -410,7 +425,9 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 		try {
 			HttpRequest method = getQueryMethod(ql, query, baseURI, dataset, includeInferred, maxQueryTime,
 					bindings);
-			return getRDFBackground(method, false, callerRef);
+			return RemoteOperationDecorators.decorate(
+					new RemoteOperation(RemoteOperation.Kind.GRAPH_QUERY, query, getQueryURL()),
+					() -> getRDFBackground(method, false, callerRef));
 		} catch (RDFHandlerException e) {
 			// Found a bug in TupleQueryResultBuilder?
 			throw new RepositoryException(e);
@@ -427,7 +444,12 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 			int maxQueryTime, RDFHandler handler, Binding... bindings) throws IOException, RDFHandlerException,
 			RepositoryException, MalformedQueryException, UnauthorizedException, QueryInterruptedException {
 		HttpRequest method = getQueryMethod(ql, query, baseURI, dataset, includeInferred, maxQueryTime, bindings);
-		getRDF(method, handler, false);
+		RemoteOperationDecorators.decorate(
+				new RemoteOperation(RemoteOperation.Kind.GRAPH_QUERY, query, getQueryURL()),
+				() -> {
+					getRDF(method, handler, false);
+					return null;
+				});
 	}
 
 	public boolean sendBooleanQuery(QueryLanguage ql, String query, Dataset dataset, boolean includeInferred,
@@ -441,7 +463,9 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 			MalformedQueryException, UnauthorizedException, QueryInterruptedException {
 		HttpRequest method = getQueryMethod(ql, query, baseURI, dataset, includeInferred, maxQueryTime, bindings);
 		try {
-			return getBoolean(method);
+			return RemoteOperationDecorators.decorate(
+					new RemoteOperation(RemoteOperation.Kind.BOOLEAN_QUERY, query, getQueryURL()),
+					() -> getBoolean(method));
 		} catch (RepositoryException | MalformedQueryException | QueryInterruptedException e) {
 			throw e;
 		} catch (RDF4JException e) {
@@ -1028,6 +1052,7 @@ public class SPARQLProtocolSession implements HttpClientDependent, AutoCloseable
 		if (authenticationHandler != null) {
 			authenticationHandler.authenticate(request);
 		}
+		HttpRequestListeners.beforeSend(request);
 		HttpResponse response = httpClient.execute(request);
 		int httpCode = response.getStatusCode();
 		if (httpCode >= 200 && httpCode < 300 || httpCode == HttpURLConnection.HTTP_NOT_FOUND) {
