@@ -31,6 +31,7 @@ import org.eclipse.rdf4j.common.transaction.QueryEvaluationMode;
 import org.eclipse.rdf4j.sail.Sail;
 import org.eclipse.rdf4j.sail.SailConnection;
 import org.eclipse.rdf4j.sail.SailException;
+import org.eclipse.rdf4j.sail.observability.SailConnectionDecorators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -314,12 +315,14 @@ public abstract class AbstractSail implements Sail {
 		try {
 			SailConnection connection = getConnectionInternal();
 
+			// connection tracking is keyed on the undecorated connection: AbstractSailConnection.close()
+			// deregisters itself, while decorators only delegate close()
 			Throwable stackTrace = debugEnabled() ? new Throwable() : null;
 			synchronized (activeConnections) {
 				activeConnections.put(connection, stackTrace);
 			}
 
-			return connection;
+			return SailConnectionDecorators.decorate(this, connection);
 		} finally {
 			initializationLock.readLock().unlock();
 		}
